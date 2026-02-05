@@ -17,6 +17,7 @@ import (
 	"math/big"
 
 	"github.com/ltcsuite/ltcd/chaincfg/chainhash"
+	"github.com/ltcsuite/ltcd/ltcutil/mweb"
 	"github.com/ltcsuite/ltcd/ltcutil/mweb/mw"
 	"github.com/ltcsuite/ltcd/txscript"
 	"github.com/ltcsuite/ltcd/wire"
@@ -498,10 +499,11 @@ func signMwebKernel(pk *PKernel) (*mw.BlindingFactor, *mw.SecretKey, error) {
 	return blind, stealthKey, nil
 }
 
-type OutputKeyDerivationFunc func(spentOutputPk *mw.PublicKey, keyExchangePubKey *mw.PublicKey, sharedSecret *mw.SecretKey) (preBlind *mw.BlindingFactor, outputSpendKey *mw.SecretKey, err error)
+type AddressIndexLookupFunc func(keychain *mweb.Keychain, stealthAddress *mw.StealthAddress) *uint32
 
 type BasicMwebInputSigner struct {
-	DeriveOutputKeys OutputKeyDerivationFunc
+	Keychain           *mweb.Keychain
+	LookupAddressIndex AddressIndexLookupFunc
 }
 
 func (s BasicMwebInputSigner) SignMwebInput(features wire.MwebInputFeatureBit, spentOutputId chainhash.Hash, spentOutputPk mw.PublicKey, amount uint64, extraData []byte, keyExchangePubKey *mw.PublicKey, spentOutputSharedSecret *mw.SecretKey) (*MwebInputSignatureData, error) {
@@ -509,15 +511,32 @@ func (s BasicMwebInputSigner) SignMwebInput(features wire.MwebInputFeatureBit, s
 		return nil, errors.New("stealth key feature bit is required to ensure key safety")
 	}
 
-	preBlind, outputSpendKey, err := s.DeriveOutputKeys(&spentOutputPk, keyExchangePubKey, spentOutputSharedSecret)
-	if err != nil {
-		return nil, err
+	sharedSecret := spentOutputSharedSecret
+	if sharedSecret == nil {
+		if keyExchangePubKey == nil {
+			return nil, errors.New("key exchange pubkey or shared secret needed")
+		}
+		sharedSecretPk := keyExchangePubKey.Mul(s.Keychain.Scan)
+		sharedSecret = (*mw.SecretKey)(mw.Hashed(mw.HashTagDerive, sharedSecretPk[:]))
 	}
 
+	preBlind := (*mw.BlindingFactor)(mw.Hashed(mw.HashTagBlind, sharedSecret[:]))
 	blind := mw.BlindSwitch(preBlind, amount)
 
+	addrB := spentOutputPk.Div((*mw.SecretKey)(mw.Hashed(mw.HashTagOutKey, sharedSecret[:])))
+	addrA := addrB.Mul(s.Keychain.Scan)
+	address := mw.StealthAddress{Scan: addrA, Spend: addrB}
+
+	addrIdx := s.LookupAddressIndex(s.Keychain, &address)
+	if addrIdx == nil {
+		return nil, errors.New("address not found")
+	}
+
+	addrSpendKey := s.Keychain.SpendKey(*addrIdx)
+	outputSpendKey := addrSpendKey.Mul((*mw.SecretKey)(mw.Hashed(mw.HashTagOutKey, sharedSecret[:])))
+
 	var ephemeralKey mw.SecretKey
-	if _, err = rand.Read(ephemeralKey[:]); err != nil {
+	if _, err := rand.Read(ephemeralKey[:]); err != nil {
 		return nil, err
 	}
 
@@ -525,8 +544,12 @@ func (s BasicMwebInputSigner) SignMwebInput(features wire.MwebInputFeatureBit, s
 
 	// Hash keys (K_i||K_o)
 	h := blake3.New(32, nil)
-	_, _ = h.Write(inputPubKey[:])
-	_, _ = h.Write(spentOutputPk[:])
+	if _, err := h.Write(inputPubKey[:]); err != nil {
+		return nil, err
+	}
+	if _, err := h.Write(spentOutputPk[:]); err != nil {
+		return nil, err
+	}
 	keyHash := (*mw.SecretKey)(h.Sum(nil))
 
 	// Calculate aggregated key k_agg = k_i + HASH(K_i||K_o) * k_o
@@ -534,11 +557,16 @@ func (s BasicMwebInputSigner) SignMwebInput(features wire.MwebInputFeatureBit, s
 
 	// Hash message
 	h = blake3.New(32, nil)
-	_ = binary.Write(h, binary.LittleEndian, features)
-	_, _ = h.Write(spentOutputId[:])
-
+	if err := binary.Write(h, binary.LittleEndian, features); err != nil {
+		return nil, err
+	}
+	if _, err := h.Write(spentOutputId[:]); err != nil {
+		return nil, err
+	}
 	if features&wire.MwebInputExtraDataFeatureBit > 0 {
-		_ = wire.WriteVarBytes(h, 0, extraData)
+		if err := wire.WriteVarBytes(h, 0, extraData); err != nil {
+			return nil, err
+		}
 	}
 	msgHash := h.Sum(nil)
 
@@ -548,4 +576,16 @@ func (s BasicMwebInputSigner) SignMwebInput(features wire.MwebInputFeatureBit, s
 		stealthOffsetTweak: *ephemeralKey.Sub(outputSpendKey),
 		inputPubKey:        inputPubKey,
 	}, nil
+}
+
+func NaiveAddressLookup(keychain *mweb.Keychain, stealthAddress *mw.StealthAddress) *uint32 {
+	var addrIdx *uint32
+	for i := uint32(0); i < uint32(1000); i++ {
+		iAddr := keychain.Address(i)
+		if iAddr.Equal(stealthAddress) {
+			addrIdx = &i
+			break
+		}
+	}
+	return addrIdx
 }

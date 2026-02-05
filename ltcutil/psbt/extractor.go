@@ -15,7 +15,6 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/ltcsuite/ltcd/chaincfg/chainhash"
 	"github.com/ltcsuite/ltcd/ltcutil/mweb"
 	"github.com/ltcsuite/ltcd/ltcutil/mweb/mw"
 	"github.com/ltcsuite/ltcd/txscript"
@@ -103,12 +102,11 @@ func ExtractUnsignedTx(p *Packet) (*wire.MsgTx, error) {
 
 		for _, pk := range p.Kernels {
 			if pk.PeginAmount != nil {
-				kernelHash := &chainhash.Hash{}
 				kernel, _ := extractKernel(&pk)
-				if kernel != nil {
-					kernelHash = kernel.Hash()
+				if kernel == nil {
+					kernel = &wire.MwebKernel{}
 				}
-				pegin := mweb.NewPegin(uint64(*pk.PeginAmount), kernelHash)
+				pegin := mweb.NewPegin(uint64(*pk.PeginAmount), kernel)
 				tx.AddTxOut(pegin)
 			}
 		}
@@ -185,7 +183,7 @@ func extractV2(p *Packet) (*wire.MsgTx, error) {
 			kernels = append(kernels, kernel)
 
 			if kernel.Pegin > 0 {
-				pegin := mweb.NewPegin(kernel.Pegin, kernel.Hash())
+				pegin := mweb.NewPegin(kernel.Pegin, kernel)
 				tx.AddTxOut(pegin)
 			}
 		}

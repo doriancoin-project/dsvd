@@ -2,7 +2,6 @@ package psbt
 
 import (
 	"encoding/binary"
-	"errors"
 	"github.com/ltcsuite/ltcd/chaincfg/chainhash"
 	"github.com/ltcsuite/ltcd/ltcutil"
 	"github.com/ltcsuite/ltcd/ltcutil/mweb"
@@ -168,37 +167,9 @@ func TestSignMwebComponents(t *testing.T) {
 		Kernels:           []PKernel{*pk},
 	}
 
-	deriveOutputKeys := func(spentOutputPk *mw.PublicKey, keyExchangePubKey *mw.PublicKey, spentOutputSharedSecret *mw.SecretKey) (*mw.BlindingFactor, *mw.SecretKey, error) {
-		var preBlind *mw.BlindingFactor
-		var outputSpendKey *mw.SecretKey
-
-		sharedSecret := spentOutputSharedSecret
-		if sharedSecret == nil {
-			if keyExchangePubKey == nil {
-				return nil, nil, errors.New("key exchange pubkey or shared secret needed")
-			}
-			sharedSecretPk := keyExchangePubKey.Mul(mwebKeychain.Scan)
-			sharedSecret = (*mw.SecretKey)(mw.Hashed(mw.HashTagDerive, sharedSecretPk[:]))
-		}
-
-		addrB := spentOutputPk.Div((*mw.SecretKey)(mw.Hashed(mw.HashTagOutKey, sharedSecret[:])))
-		addrA := addrB.Mul(mwebKeychain.Scan)
-		address := mw.StealthAddress{Scan: addrA, Spend: addrB}
-		if !address.Equal(mwebKeychain.Address(addrIdx)) {
-			return nil, nil, errors.New("address doesn't match")
-		}
-
-		addrSpendSecret := mwebKeychain.SpendKey(addrIdx)
-
-		// Calculate pre-blind and output spend key
-		preBlind = (*mw.BlindingFactor)(mw.Hashed(mw.HashTagBlind, sharedSecret[:]))
-		outputSpendKey = addrSpendSecret.Mul((*mw.SecretKey)(mw.Hashed(mw.HashTagOutKey, sharedSecret[:])))
-
-		return preBlind, outputSpendKey, nil
-	}
-
 	mwebInputSigner := BasicMwebInputSigner{
-		DeriveOutputKeys: deriveOutputKeys,
+		Keychain:           mwebKeychain,
+		LookupAddressIndex: NaiveAddressLookup,
 	}
 	signer, err := NewSigner(packet, mwebInputSigner)
 	if err != nil {

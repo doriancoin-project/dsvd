@@ -286,16 +286,13 @@ type Params struct {
 	HDCoinType uint32
 }
 
-// MainNetParams defines the network parameters for the main Litecoin network.
+// MainNetParams defines the network parameters for the main Doriancoin network.
 var MainNetParams = Params{
 	Name:        "mainnet",
 	Net:         wire.MainNet,
-	DefaultPort: "9333",
+	DefaultPort: "1949",
 	DNSSeeds: []DNSSeed{
-		{"seed-a.litecoin.loshan.co.uk", true},
-		{"dnsseed.thrasher.io", true},
-		{"dnsseed.litecointools.com", false},
-		{"dnsseed.litecoinpool.org", false},
+		{"seed.doriancoin.org", true},
 	},
 
 	// Chain parameters
@@ -303,9 +300,9 @@ var MainNetParams = Params{
 	GenesisHash:              &genesisHash,
 	PowLimit:                 mainPowLimit,
 	PowLimitBits:             0x1e0ffff0,
-	BIP0034Height:            710000,
-	BIP0065Height:            918684,
-	BIP0066Height:            811879,
+	BIP0034Height:            0,
+	BIP0065Height:            302983,
+	BIP0066Height:            302983,
 	CoinbaseMaturity:         100,
 	MwebPegoutMaturity:       6,
 	SubsidyReductionInterval: 840000,
@@ -318,22 +315,27 @@ var MainNetParams = Params{
 
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{
-		{1500, newHashFromStr("841a2965955dd288cfa707a755d05a54e45f8bd476835ec9af4402a2b59a2967")},
-		{4032, newHashFromStr("9ce90e427198fc0ef05e5905ce3503725b80e26afd35a987965fd7e3d9cf0846")},
-		{8064, newHashFromStr("eb984353fc5190f210651f150c40b8a4bab9eeeff0b729fcb3987da694430d70")},
-		{16128, newHashFromStr("602edf1859b7f9a6af809f1d9b0e6cb66fdc1d4d9dcd7a4bec03e12a1ccd153d")},
-		{23420, newHashFromStr("d80fdf9ca81afd0bd2b2a90ac3a9fe547da58f2530ec874e978fce0b5101b507")},
-		{50000, newHashFromStr("69dc37eb029b68f075a5012dcc0419c127672adb4f3a32882b2b3e71d07a20a6")},
-		{80000, newHashFromStr("4fcb7c02f676a300503f49c764a89955a8f920b46a8cbecb4867182ecdb2e90a")},
-		{120000, newHashFromStr("bd9d26924f05f6daa7f0155f32828ec89e8e29cee9e7121b026a7a3552ac6131")},
-		{161500, newHashFromStr("dbe89880474f4bb4f75c227c77ba1cdc024991123b28b8418dbbf7798471ff43")},
-		{179620, newHashFromStr("2ad9c65c990ac00426d18e446e0fd7be2ffa69e9a7dcb28358a50b2b78b9f709")},
-		{240000, newHashFromStr("7140d1c4b4c2157ca217ee7636f24c9c73db39c4590c4e6eab2e3ea1555088aa")},
-		{383640, newHashFromStr("2b6809f094a9215bafc65eb3f110a35127a34be94b7d0590a096c3f126c6f364")},
-		{409004, newHashFromStr("487518d663d9f1fa08611d9395ad74d982b667fbdc0e77e9cf39b4f1355908a3")},
-		{456000, newHashFromStr("bf34f71cc6366cd487930d06be22f897e34ca6a40501ac7d401be32456372004")},
-		{638902, newHashFromStr("15238656e8ec63d28de29a8c75fcf3a5819afc953dcd9cc45cecc53baec74f38")},
-		{721000, newHashFromStr("198a7b4de1df9478e2463bd99d75b714eab235a2e63e741641dc8a759a9840e5")},
+		{1500, newHashFromStr("c2418141e7db51d12de03e9e161d3de41f67ea5a9409aa9c9ae41f1c31f661d4")},
+		{4032, newHashFromStr("81ecfe560526ee5004d4e46d02b4cb32adc7bd9de75a62abe22c58257f7fd5bf")},
+		{8064, newHashFromStr("1107b7955794a39a54c62207052d5677b6d70f4d5bca0638d5b49aaeecb356c9")},
+		{16128, newHashFromStr("3e48a2197c1465aad2c08e8dd5d9f16ffe4e861514452cbd3f74358988c6b487")},
+		{23420, newHashFromStr("ea49f4f4335fc1c21781fe6be43dc135de4e7321bbe9f5daad2999e909cc07c4")},
+		{50000, newHashFromStr("cf26ff7369cee9d04ae5ea9f364a06c9acb2f7739229ea58eed46162ef69397f")},
+		{80000, newHashFromStr("5af01844c1f929ea0ea80d1edd9cb8167f743c3b36068e7c3d487e274b84b98b")},
+		{120000, newHashFromStr("3ca98428e1ca069b09ec0cc32b0d24e2b72ac0c02db1250b351272c31a072156")},
+		{161500, newHashFromStr("bff9f62380d99ad42381dd0a004d5ada447e8077b30d25b00f2a8e6a33a9b856")},
+		{179620, newHashFromStr("0120cff29f85e51828a034efe26fa1f48702de7a52b1cc25dd9d6d158f0a3a54")},
+		{240000, newHashFromStr("021f02e45c710343617353ee887592db9a1c966bea66fbe587c25c63f2987e92")},
+		{300000, newHashFromStr("e07995d7428de865e7463308a67a7c06eab50187b6e38f1d6cad8094665ac999")},
+		{400000, newHashFromStr("a5cf0e78be7426958fbb56658d652544604b79c80cca77889c5c55f1574ada7a")},
+		{500000, newHashFromStr("bb74bd10ee0873d4d9cb653bc11db53b9ff9a149c59e695f63df224d1fc7d6cc")},
+		{600000, newHashFromStr("71a242884d2a814ad57859b4081e81229d738c8fe631e805091c63c97a6ca997")},
+		{700000, newHashFromStr("4e7a512a4afd778acfbdbc5ca8521dc99e90307bce75ed7ff19dd79284cd0423")},
+		{800000, newHashFromStr("39c0f7db6a6757d7a6a9e718e97b6e1be79cc2099eeaa50e966ca7916240a15d")},
+		{900000, newHashFromStr("766f452b2192d2fbe0c139d866838e9425872df6d287d92aba556accbc9c5ff5")},
+		{1000000, newHashFromStr("db42b61eff7fd4196c0f591b085580a58683f88689cf7a4dce70d05b9bb5fa0b")},
+		{1100000, newHashFromStr("ea5a8ba369ff025aa8db6bd455b9f750f2f7e3c6faf5733419bcaecf2623b008")},
+		{1200000, newHashFromStr("8bb146c1b567f7abe9d034770456039a0a8801501bdfc135d28f76c027a04235")},
 	},
 
 	// Consensus rule change deployments.
@@ -385,19 +387,19 @@ var MainNetParams = Params{
 		DeploymentTaproot: {
 			BitNumber: 2,
 			DeploymentStarter: NewBlockHeightDeploymentStarter(
-				2161152, // End November 2021
+				1244000, // Doriancoin taproot activation
 			),
 			DeploymentEnder: NewBlockHeightDeploymentEnder(
-				2370816, // 364 days later
+				1453664, // 364 days later
 			),
 		},
 		DeploymentMweb: {
 			BitNumber: 4,
 			DeploymentStarter: NewBlockHeightDeploymentStarter(
-				2217600, // End Feb 2022
+				1244100, // Doriancoin MWEB activation
 			),
 			DeploymentEnder: NewBlockHeightDeploymentEnder(
-				2427264, // 364 days later
+				1453764, // 364 days later
 			),
 		},
 	},
@@ -407,14 +409,14 @@ var MainNetParams = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "ltc", // always ltc for main net
+	Bech32HRPSegwit: "dsv", // always dsv for main net
 
 	// Human-readable part for Bech32 encoded mweb addresses.
-	Bech32HRPMweb: "ltcmweb", // always ltcmweb for main net
+	Bech32HRPMweb: "dsvmweb", // always dsvmweb for main net
 
 	// Address encoding magics
-	PubKeyHashAddrID:        0x30, // starts with L
-	ScriptHashAddrID:        0x32, // starts with M
+	PubKeyHashAddrID:        0x1e, // starts with D
+	ScriptHashAddrID:        0x05, // starts with 3
 	PrivateKeyID:            0xB0, // starts with 6 (uncompressed) or T (compressed)
 	WitnessPubKeyHashAddrID: 0x06, // starts with p2
 	WitnessScriptHashAddrID: 0x0A, // starts with 7Xh
@@ -425,7 +427,7 @@ var MainNetParams = Params{
 
 	// BIP44 coin type used in the hierarchical deterministic path for
 	// address generation.
-	HDCoinType: 2,
+	HDCoinType: 1948,
 }
 
 // RegressionNetParams defines the network parameters for the regression test
@@ -529,14 +531,14 @@ var RegressionNetParams = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "rltc", // always rltc for reg test net
+	Bech32HRPSegwit: "rdsv", // always rdsv for reg test net
 
 	// Human-readable part for Bech32 encoded mweb addresses.
 	Bech32HRPMweb: "tmweb", // always tmweb for reg test net
 
 	// Address encoding magics
 	PubKeyHashAddrID: 0x6f, // starts with m or n
-	ScriptHashAddrID: 0x3a, // starts with Q
+	ScriptHashAddrID: 0xc4, // starts with 2
 	PrivateKeyID:     0xef, // starts with 9 (uncompressed) or c (compressed)
 
 	// BIP32 hierarchical deterministic extended key magics
@@ -548,7 +550,7 @@ var RegressionNetParams = Params{
 	HDCoinType: 1,
 }
 
-// TestNet4Params defines the network parameters for the test Litecoin network
+// TestNet4Params defines the network parameters for the test Doriancoin network
 // (version 4).  Not to be confused with the regression test network, this
 // network is sometimes simply called "testnet".
 var TestNet4Params = Params{
@@ -556,8 +558,8 @@ var TestNet4Params = Params{
 	Net:         wire.TestNet4,
 	DefaultPort: "19335",
 	DNSSeeds: []DNSSeed{
-		{"testnet-seed.litecointools.com", false},
-		{"seed-b.litecoin.loshan.co.uk", true},
+		{"testnet-seed.doriancointools.com", false},
+		{"seed-b.doriancoin.loshan.co.uk", true},
 		{"dnsseed-testnet.thrasher.io", true},
 	},
 
@@ -566,9 +568,9 @@ var TestNet4Params = Params{
 	GenesisHash:              &testNet4GenesisHash,
 	PowLimit:                 testNet4PowLimit,
 	PowLimitBits:             0x1e0fffff,
-	BIP0034Height:            76,
-	BIP0065Height:            76,
-	BIP0066Height:            76,
+	BIP0034Height:            0,
+	BIP0065Height:            0,
+	BIP0066Height:            0,
 	CoinbaseMaturity:         100,
 	MwebPegoutMaturity:       6,
 	SubsidyReductionInterval: 840000,
@@ -581,12 +583,7 @@ var TestNet4Params = Params{
 
 	// Checkpoints ordered from oldest to newest.
 	Checkpoints: []Checkpoint{
-		{26115, newHashFromStr("817d5b509e91ab5e439652eee2f59271bbc7ba85021d720cdb6da6565b43c14f")},
-		{43928, newHashFromStr("7d86614c153f5ef6ad878483118ae523e248cd0dd0345330cb148e812493cbb4")},
-		{69296, newHashFromStr("66c2f58da3cfd282093b55eb09c1f5287d7a18801a8ff441830e67e8771010df")},
-		{99949, newHashFromStr("8dd471cb5aecf5ead91e7e4b1e932c79a0763060f8d93671b6801d115bfc6cde")},
-		{159256, newHashFromStr("ab5b0b9968842f5414804591119d6db829af606864b1959a25d6f5c114afb2b7")},
-		{2394367, newHashFromStr("bc5829f4973d0797755efee11313687b3c63ee2f70b60b62eebcd10283534327")},
+		{2056, newHashFromStr("17748a31ba97afdc9a4f86837a39d287e3e7c7290a08a1d816c5969c78a83289")},
 	},
 
 	// Consensus rule change deployments.
@@ -659,14 +656,14 @@ var TestNet4Params = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "tltc", // always tltc for test net
+	Bech32HRPSegwit: "tdsv", // always tdsv for test net
 
 	// Human-readable part for Bech32 encoded mweb addresses.
 	Bech32HRPMweb: "tmweb", // always tmweb for test net
 
 	// Address encoding magics
 	PubKeyHashAddrID:        0x6f, // starts with m or n
-	ScriptHashAddrID:        0x3a, // starts with Q
+	ScriptHashAddrID:        0xc4, // starts with 2
 	WitnessPubKeyHashAddrID: 0x52, // starts with QW
 	WitnessScriptHashAddrID: 0x31, // starts with T7n
 	PrivateKeyID:            0xef, // starts with 9 (uncompressed) or c (compressed)
@@ -680,7 +677,7 @@ var TestNet4Params = Params{
 	HDCoinType: 1,
 }
 
-// SimNetParams defines the network parameters for the simulation test Litecoin
+// SimNetParams defines the network parameters for the simulation test Doriancoin
 // network.  This network is similar to the normal test network except it is
 // intended for private use within a group of individuals doing simulation
 // testing.  The functionality is intended to differ in that the only nodes
@@ -776,7 +773,7 @@ var SimNetParams = Params{
 
 	// Human-readable part for Bech32 encoded segwit addresses, as defined in
 	// BIP 173.
-	Bech32HRPSegwit: "sltc", // always lsb for sim net
+	Bech32HRPSegwit: "sdsv", // always sdsv for sim net
 
 	// Address encoding magics
 	PubKeyHashAddrID:        0x3f, // starts with S
@@ -795,7 +792,7 @@ var SimNetParams = Params{
 }
 
 // SigNetParams defines the network parameters for the default public signet
-// Litecoin network. Not to be confused with the regression test network, this
+// Doriancoin network. Not to be confused with the regression test network, this
 // network is sometimes simply called "signet" or "taproot signet".
 var SigNetParams = CustomSignetParams(
 	DefaultSignetChallenge, DefaultSignetDNSSeeds,
@@ -904,7 +901,7 @@ func CustomSignetParams(challenge []byte, dnsSeeds []DNSSeed) Params {
 
 		// Human-readable part for Bech32 encoded segwit addresses, as defined in
 		// BIP 173.
-		Bech32HRPSegwit: "tltc", // always tltc for test net
+		Bech32HRPSegwit: "tdsv", // always tdsv for test net
 
 		// Address encoding magics
 		PubKeyHashAddrID:        0x6f, // starts with m or n
@@ -924,10 +921,10 @@ func CustomSignetParams(challenge []byte, dnsSeeds []DNSSeed) Params {
 }
 
 var (
-	// ErrDuplicateNet describes an error where the parameters for a Litecoin
+	// ErrDuplicateNet describes an error where the parameters for a Doriancoin
 	// network could not be set due to the network already being a standard
 	// network or previously-registered into this package.
-	ErrDuplicateNet = errors.New("duplicate Litecoin network")
+	ErrDuplicateNet = errors.New("duplicate Doriancoin network")
 
 	// ErrUnknownHDKeyID describes an error where the provided id which
 	// is intended to identify the network for a hierarchical deterministic
@@ -953,7 +950,7 @@ func (d DNSSeed) String() string {
 	return d.Host
 }
 
-// Register registers the network parameters for a Litecoin network.  This may
+// Register registers the network parameters for a Doriancoin network.  This may
 // error with ErrDuplicateNet if the network is already registered (either
 // due to a previous Register call, or the network being one of the default
 // networks).

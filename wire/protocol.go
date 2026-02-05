@@ -157,14 +157,14 @@ type BitcoinNet uint32
 // this package does not provide that functionality since it's generally a
 // better idea to simply disconnect clients that are misbehaving over TCP.
 const (
-	// MainNet represents the main litecoin network.
-	MainNet BitcoinNet = 0xdbb6c0fb
+	// MainNet represents the main doriancoin network.
+	MainNet BitcoinNet = 0xd1b0c1d0
 
 	// TestNet represents the regression test network.
-	TestNet BitcoinNet = 0xdab5bffa
+	TestNet BitcoinNet = 0xd3b1b0d2
 
 	// TestNet4 represents the test network (version 4).
-	TestNet4 BitcoinNet = 0xf1c8d2fd
+	TestNet4 BitcoinNet = 0xd2c0d2d1
 
 	// SimNet represents the simulation test network.
 	SimNet BitcoinNet = 0x12141c16
