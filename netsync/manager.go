@@ -894,7 +894,9 @@ func (sm *SyncManager) fetchHeaderBlocks() {
 			// If we're fetching from a witness enabled peer
 			// post-fork, then ensure that we receive all the
 			// witness data in the blocks.
-			if sm.syncPeer.IsWitnessEnabled() {
+			if sm.syncPeer.IsMwebEnabled() {
+				iv.Type = wire.InvTypeMwebBlock
+			} else if sm.syncPeer.IsWitnessEnabled() {
 				iv.Type = wire.InvTypeWitnessBlock
 			}
 
@@ -1031,6 +1033,8 @@ func (sm *SyncManager) handleNotFoundMsg(nfmsg *notFoundMsg) {
 		// verify the hash was actually announced by the peer
 		// before deleting from the global requested maps.
 		switch inv.Type {
+		case wire.InvTypeMwebBlock:
+			fallthrough
 		case wire.InvTypeWitnessBlock:
 			fallthrough
 		case wire.InvTypeBlock:
@@ -1057,6 +1061,8 @@ func (sm *SyncManager) handleNotFoundMsg(nfmsg *notFoundMsg) {
 // are in the memory pool (either the main pool or orphan pool).
 func (sm *SyncManager) haveInventory(invVect *wire.InvVect) (bool, error) {
 	switch invVect.Type {
+	case wire.InvTypeMwebBlock:
+		fallthrough
 	case wire.InvTypeWitnessBlock:
 		fallthrough
 	case wire.InvTypeBlock:
@@ -1157,6 +1163,8 @@ func (sm *SyncManager) handleInvMsg(imsg *invMsg) {
 		case wire.InvTypeTx:
 		case wire.InvTypeWitnessBlock:
 		case wire.InvTypeWitnessTx:
+		case wire.InvTypeMwebBlock:
+		case wire.InvTypeMwebTx:
 		default:
 			continue
 		}
@@ -1252,6 +1260,8 @@ func (sm *SyncManager) handleInvMsg(imsg *invMsg) {
 		requestQueue = requestQueue[1:]
 
 		switch iv.Type {
+		case wire.InvTypeMwebBlock:
+			fallthrough
 		case wire.InvTypeWitnessBlock:
 			fallthrough
 		case wire.InvTypeBlock:
@@ -1261,7 +1271,9 @@ func (sm *SyncManager) handleInvMsg(imsg *invMsg) {
 				limitAdd(sm.requestedBlocks, iv.Hash, maxRequestedBlocks)
 				limitAdd(state.requestedBlocks, iv.Hash, maxRequestedBlocks)
 
-				if peer.IsWitnessEnabled() {
+				if peer.IsMwebEnabled() {
+					iv.Type = wire.InvTypeMwebBlock
+				} else if peer.IsWitnessEnabled() {
 					iv.Type = wire.InvTypeWitnessBlock
 				}
 
@@ -1269,6 +1281,8 @@ func (sm *SyncManager) handleInvMsg(imsg *invMsg) {
 				numRequested++
 			}
 
+		case wire.InvTypeMwebTx:
+			fallthrough
 		case wire.InvTypeWitnessTx:
 			fallthrough
 		case wire.InvTypeTx:

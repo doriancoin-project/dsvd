@@ -228,15 +228,27 @@ func CalcBlockSubsidy(height int32, chainParams *chaincfg.Params) int64 {
 // CheckTransactionSanity performs some preliminary checks on a transaction to
 // ensure it is sane.  These checks are context free.
 func CheckTransactionSanity(tx *ltcutil.Tx) error {
-	// A transaction must have at least one input.
 	msgTx := tx.MsgTx()
-	if len(msgTx.TxIn) == 0 {
-		return ruleError(ErrNoTxInputs, "transaction has no inputs")
+
+	// MWEB-only transactions (have MWEB data but no regular inputs/outputs)
+	// and HogEx transactions (the first MWEB block has no previous HogEx to
+	// spend) are allowed to have empty inputs.
+	isMWEBOnly := msgTx.Mweb != nil && len(msgTx.TxIn) == 0 && len(msgTx.TxOut) == 0
+
+	// A transaction must have at least one input, unless it is a HogEx
+	// or MWEB-only transaction.
+	if !isMWEBOnly && !msgTx.IsHogEx {
+		if len(msgTx.TxIn) == 0 {
+			return ruleError(ErrNoTxInputs, "transaction has no inputs")
+		}
 	}
 
-	// A transaction must have at least one output.
-	if len(msgTx.TxOut) == 0 {
-		return ruleError(ErrNoTxOutputs, "transaction has no outputs")
+	// A transaction must have at least one output, unless it is an
+	// MWEB-only transaction.
+	if !isMWEBOnly {
+		if len(msgTx.TxOut) == 0 {
+			return ruleError(ErrNoTxOutputs, "transaction has no outputs")
+		}
 	}
 
 	// A transaction must not exceed the maximum allowed block payload when

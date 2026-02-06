@@ -470,6 +470,7 @@ type Peer struct {
 	sendHeadersPreferred bool   // peer sent a sendheaders message
 	verAckReceived       bool
 	witnessEnabled       bool
+	mwebEnabled          bool
 	sendAddrV2           bool
 
 	wireEncoding wire.MessageEncoding
@@ -834,6 +835,18 @@ func (p *Peer) IsWitnessEnabled() bool {
 	p.flagsMtx.Unlock()
 
 	return witnessEnabled
+}
+
+// IsMwebEnabled returns true if the peer has signalled that it supports
+// MWEB blocks.
+//
+// This function is safe for concurrent access.
+func (p *Peer) IsMwebEnabled() bool {
+	p.flagsMtx.Lock()
+	mwebEnabled := p.mwebEnabled
+	p.flagsMtx.Unlock()
+
+	return mwebEnabled
 }
 
 // WantsAddrV2 returns if the peer supports addrv2 messages instead of the
@@ -1714,7 +1727,8 @@ out:
 				// out immediately, sipping the inv trickle
 				// queue.
 				if iv.Type == wire.InvTypeBlock ||
-					iv.Type == wire.InvTypeWitnessBlock {
+					iv.Type == wire.InvTypeWitnessBlock ||
+					iv.Type == wire.InvTypeMwebBlock {
 
 					invMsg := wire.NewMsgInvSizeHint(1)
 					invMsg.AddInvVect(iv)
@@ -2041,6 +2055,9 @@ func (p *Peer) readRemoteVersionMsg() error {
 	if p.services&wire.SFNodeWitness == wire.SFNodeWitness {
 		p.witnessEnabled = true
 	}
+	if p.services&wire.SFNodeMWEB == wire.SFNodeMWEB {
+		p.mwebEnabled = true
+	}
 	p.flagsMtx.Unlock()
 
 	// Once the version message has been exchanged, we're able to determine
@@ -2050,6 +2067,9 @@ func (p *Peer) readRemoteVersionMsg() error {
 	// BIP0144.
 	if p.services&wire.SFNodeWitness == wire.SFNodeWitness {
 		p.wireEncoding = wire.WitnessEncoding
+	}
+	if p.services&wire.SFNodeMWEB == wire.SFNodeMWEB {
+		p.wireEncoding |= wire.MwebEncoding
 	}
 
 	// Invoke the callback if specified.

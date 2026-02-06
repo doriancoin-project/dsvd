@@ -45,7 +45,8 @@ const (
 	// defaultServices describes the default services that are supported by
 	// the server.
 	defaultServices = wire.SFNodeNetwork | wire.SFNodeNetworkLimited |
-		wire.SFNodeBloom | wire.SFNodeWitness | wire.SFNodeCF
+		wire.SFNodeBloom | wire.SFNodeWitness | wire.SFNodeCF |
+		wire.SFNodeMWEB
 
 	// defaultRequiredServices describes the default services that are
 	// required to be supported by outbound peers.
@@ -719,6 +720,8 @@ func (sp *serverPeer) OnGetData(_ *peer.Peer, msg *wire.MsgGetData) {
 			err = sp.server.pushTxMsg(sp, &iv.Hash, c, waitChan, wire.LatestEncoding)
 		case wire.InvTypeTx:
 			err = sp.server.pushTxMsg(sp, &iv.Hash, c, waitChan, wire.BaseEncoding)
+		case wire.InvTypeMwebBlock:
+			err = sp.server.pushBlockMsg(sp, &iv.Hash, c, waitChan, wire.LatestEncoding)
 		case wire.InvTypeWitnessBlock:
 			err = sp.server.pushBlockMsg(sp, &iv.Hash, c, waitChan, wire.LatestEncoding)
 		case wire.InvTypeBlock:
@@ -1420,9 +1423,13 @@ func (sp *serverPeer) OnNotFound(p *peer.Peer, msg *wire.MsgNotFound) {
 			numBlocks++
 		case wire.InvTypeWitnessBlock:
 			numBlocks++
+		case wire.InvTypeMwebBlock:
+			numBlocks++
 		case wire.InvTypeTx:
 			numTxns++
 		case wire.InvTypeWitnessTx:
+			numTxns++
+		case wire.InvTypeMwebTx:
 			numTxns++
 		default:
 			peerLog.Debugf("Invalid inv type '%d' in notfound message from %s",
