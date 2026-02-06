@@ -232,6 +232,22 @@ func calcNextRequiredDifficulty(lastNode HeaderCtx, newBlockTime time.Time,
 		return c.ChainParams().PowLimitBits, nil
 	}
 
+	// Dispatch to the appropriate difficulty algorithm based on block
+	// height. Doriancoin transitioned from the original BTC-style
+	// algorithm to LWMA, then LWMAv2, then ASERT.
+	nHeight := lastNode.Height() + 1
+	if c.ChainParams().ASERTHeight > 0 && nHeight > c.ChainParams().ASERTHeight {
+		return calcNextRequiredDifficultyASERT(lastNode, c)
+	}
+	if c.ChainParams().LWMAFixHeight > 0 && nHeight >= c.ChainParams().LWMAFixHeight {
+		return calcNextRequiredDifficultyLWMAv2(lastNode, c)
+	}
+	if c.ChainParams().LWMAHeight > 0 && nHeight >= c.ChainParams().LWMAHeight {
+		return calcNextRequiredDifficultyLWMA(lastNode, c)
+	}
+
+	// Original BTC-style difficulty retarget algorithm.
+
 	// Return the previous block's difficulty requirements if this block
 	// is not at a difficulty retarget interval.
 	if (lastNode.Height()+1)%c.BlocksPerRetarget() != 0 {
@@ -313,6 +329,259 @@ func calcNextRequiredDifficulty(lastNode HeaderCtx, newBlockTime time.Time,
 		c.ChainParams().TargetTimespan)
 
 	return newTargetBits, nil
+}
+
+// calcNextRequiredDifficultyLWMA calculates the required difficulty using the
+// LWMA (Linear Weighted Moving Average) algorithm. This weights recent blocks
+// more heavily, providing faster response to hashrate changes than the
+// original BTC-style algorithm.
+//
+// Reference: https://github.com/zawy12/difficulty-algorithms/issues/3
+func calcNextRequiredDifficultyLWMA(lastNode HeaderCtx, c ChainCtx) (uint32, error) {
+	params := c.ChainParams()
+	T := int64(params.TargetTimePerBlock / time.Second)
+	N := params.LWMAWindow
+
+	height := int64(lastNode.Height()) + 1
+	blocks := height - int64(params.LWMAHeight)
+	if blocks > N {
+		blocks = N
+	}
+
+	// Need at least 3 blocks for a meaningful LWMA calculation.
+	if blocks < 3 {
+		return lastNode.Bits(), nil
+	}
+
+	prevTarget := CompactToBig(lastNode.Bits())
+
+	var sumWeightedSolvetimes int64
+	var sumWeights int64
+
+	block := lastNode
+	for i := blocks; i >= 1; i-- {
+		prev := block.Parent()
+		if prev == nil {
+			break
+		}
+
+		solvetime := block.Timestamp() - prev.Timestamp()
+		if solvetime < 1 {
+			solvetime = 1
+		}
+		if solvetime > 6*T {
+			solvetime = 6 * T
+		}
+
+		sumWeightedSolvetimes += solvetime * i
+		sumWeights += i
+
+		block = prev
+	}
+
+	expectedWeightedSolvetimes := sumWeights * T
+
+	// Symmetric caps: limit adjustment to 10x per calculation.
+	minWS := expectedWeightedSolvetimes / 10
+	maxWS := expectedWeightedSolvetimes * 10
+
+	if sumWeightedSolvetimes < minWS {
+		sumWeightedSolvetimes = minWS
+	}
+	if sumWeightedSolvetimes > maxWS {
+		sumWeightedSolvetimes = maxWS
+	}
+
+	// nextTarget = prevTarget * sumWeightedSolvetimes / expectedWeightedSolvetimes
+	nextTarget := new(big.Int).Mul(prevTarget, big.NewInt(sumWeightedSolvetimes))
+	nextTarget.Div(nextTarget, big.NewInt(expectedWeightedSolvetimes))
+
+	if nextTarget.Cmp(params.PowLimit) > 0 {
+		nextTarget.Set(params.PowLimit)
+	}
+
+	return BigToCompact(nextTarget), nil
+}
+
+// calcNextRequiredDifficultyLWMAv2 calculates the required difficulty using
+// the stabilized LWMAv2 algorithm. This fixes a feedback loop instability
+// in LWMA v1 by using the target from the start of the window as a reference
+// instead of the previous block's target, preventing compounding oscillations.
+func calcNextRequiredDifficultyLWMAv2(lastNode HeaderCtx, c ChainCtx) (uint32, error) {
+	params := c.ChainParams()
+	T := int64(params.TargetTimePerBlock / time.Second)
+	N := params.LWMAWindow
+
+	// Use distance from original LWMA activation, not LWMAv2 activation,
+	// so the window is already full by the time v2 activates.
+	height := int64(lastNode.Height()) + 1
+	blocks := height - int64(params.LWMAHeight)
+	if blocks > N {
+		blocks = N
+	}
+
+	if blocks < 3 {
+		return lastNode.Bits(), nil
+	}
+
+	// Find window start block and use its target as reference.
+	// This breaks the feedback loop that caused oscillations in v1.
+	windowStart := lastNode
+	for i := int64(0); i < blocks; i++ {
+		prev := windowStart.Parent()
+		if prev == nil {
+			break
+		}
+		windowStart = prev
+	}
+	referenceTarget := CompactToBig(windowStart.Bits())
+
+	var sumWeightedSolvetimes int64
+	var sumWeights int64
+
+	block := lastNode
+	for i := blocks; i >= 1; i-- {
+		prev := block.Parent()
+		if prev == nil {
+			break
+		}
+
+		solvetime := block.Timestamp() - prev.Timestamp()
+		if solvetime < 1 {
+			solvetime = 1
+		}
+		if solvetime > 6*T {
+			solvetime = 6 * T
+		}
+
+		sumWeightedSolvetimes += solvetime * i
+		sumWeights += i
+
+		block = prev
+	}
+
+	expectedWeightedSolvetimes := sumWeights * T
+
+	// Tighter caps (3x instead of 10x) since window-start reference
+	// is more stable.
+	minWS := expectedWeightedSolvetimes / 3
+	maxWS := expectedWeightedSolvetimes * 3
+
+	if sumWeightedSolvetimes < minWS {
+		sumWeightedSolvetimes = minWS
+	}
+	if sumWeightedSolvetimes > maxWS {
+		sumWeightedSolvetimes = maxWS
+	}
+
+	nextTarget := new(big.Int).Mul(referenceTarget, big.NewInt(sumWeightedSolvetimes))
+	nextTarget.Div(nextTarget, big.NewInt(expectedWeightedSolvetimes))
+
+	if nextTarget.Cmp(params.PowLimit) > 0 {
+		nextTarget.Set(params.PowLimit)
+	}
+
+	return BigToCompact(nextTarget), nil
+}
+
+// calcNextRequiredDifficultyASERT calculates the required difficulty using the
+// ASERT (Absolutely Scheduled Exponentially Rising Targets) algorithm.
+// Based on BCH's aserti3-2d by Mark Lundeberg. This computes difficulty from
+// total time deviation relative to an ideal block schedule using an exponential
+// adjustment. It is mathematically proven to never oscillate and has no window
+// lag.
+//
+// Formula: target = anchor_target * 2^((time_delta - T * height_delta) / halflife)
+func calcNextRequiredDifficultyASERT(lastNode HeaderCtx, c ChainCtx) (uint32, error) {
+	params := c.ChainParams()
+
+	// Find the anchor block at ASERTHeight.
+	anchor := lastNode
+	for anchor.Height() > params.ASERTHeight {
+		anchor = anchor.Parent()
+	}
+
+	anchorParent := anchor.Parent()
+	if anchorParent == nil {
+		return 0, AssertError("ASERT anchor block has no parent")
+	}
+
+	anchorTarget := CompactToBig(params.ASERTAnchorBits)
+
+	anchorParentTime := anchorParent.Timestamp()
+	currentParentTime := lastNode.Timestamp()
+	timeDelta := currentParentTime - anchorParentTime
+
+	nHeight := int64(lastNode.Height()) + 1
+	heightDelta := nHeight - int64(params.ASERTHeight)
+
+	T := int64(params.TargetTimePerBlock / time.Second)
+	halfLife := params.ASERTHalfLife
+
+	// Compute exponent in fixed-point with 16 fractional bits:
+	// exponent = (timeDelta - T * heightDelta) * 65536 / halfLife
+	exponent := ((timeDelta - T*heightDelta) * 65536) / halfLife
+
+	// Decompose into integer shifts and fractional part.
+	var shifts int32
+	var frac uint16
+
+	if exponent >= 0 {
+		shifts = int32(exponent >> 16)
+		frac = uint16(exponent & 0xFFFF)
+	} else {
+		// For negative exponents, ensure frac is in [0, 65536).
+		absExponent := -exponent
+		shifts = -int32(absExponent >> 16)
+		remainder := uint32(absExponent & 0xFFFF)
+		if remainder != 0 {
+			shifts--
+			frac = uint16(65536 - remainder)
+		} else {
+			frac = 0
+		}
+	}
+
+	// Compute 2^(frac/65536) * 65536 using cubic polynomial approximation.
+	// Coefficients from BCH aserti3-2d, designed to stay within uint64 bounds.
+	factor := uint32(65536)
+	if frac > 0 {
+		f := uint64(frac)
+		factor = 65536 + uint32(
+			(195766423245049*f+
+				971821376*f*f+
+				5127*f*f*f+
+				(1<<47))>>48)
+	}
+
+	// Apply fractional part: nextTarget = anchorTarget * factor / 65536
+	nextTarget := new(big.Int).Mul(anchorTarget, big.NewInt(int64(factor)))
+	nextTarget.Rsh(nextTarget, 16)
+
+	// Apply integer shifts (left = easier, right = harder).
+	if shifts > 0 {
+		if shifts >= 256 {
+			return BigToCompact(params.PowLimit), nil
+		}
+		nextTarget.Lsh(nextTarget, uint(shifts))
+	} else if shifts < 0 {
+		absShifts := -shifts
+		if absShifts >= 256 {
+			return BigToCompact(big.NewInt(1)), nil
+		}
+		nextTarget.Rsh(nextTarget, uint(absShifts))
+	}
+
+	// Ensure target is at least 1 (maximum possible difficulty).
+	if nextTarget.Sign() == 0 {
+		nextTarget.SetInt64(1)
+	}
+
+	if nextTarget.Cmp(params.PowLimit) > 0 {
+		nextTarget.Set(params.PowLimit)
+	}
+
+	return BigToCompact(nextTarget), nil
 }
 
 // CalcNextRequiredDifficulty calculates the required difficulty for the block

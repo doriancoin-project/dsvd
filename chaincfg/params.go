@@ -237,6 +237,28 @@ type Params struct {
 	// NOTE: This only applies if ReduceMinDifficulty is true.
 	MinDiffReductionTime time.Duration
 
+	// LWMAHeight is the block height at which the LWMA difficulty
+	// algorithm activates. Set to 0 to disable.
+	LWMAHeight int32
+
+	// LWMAFixHeight is the block height at which the stabilized LWMAv2
+	// difficulty algorithm activates. Set to 0 to disable.
+	LWMAFixHeight int32
+
+	// LWMAWindow is the number of blocks in the LWMA averaging window.
+	LWMAWindow int64
+
+	// ASERTHeight is the block height at which the ASERT difficulty
+	// algorithm activates. Set to 0 to disable.
+	ASERTHeight int32
+
+	// ASERTHalfLife is the ASERT halflife in seconds.
+	ASERTHalfLife int64
+
+	// ASERTAnchorBits is the hardcoded anchor nBits for ASERT at the
+	// activation height.
+	ASERTAnchorBits uint32
+
 	// GenerateSupported specifies whether or not CPU mining is allowed.
 	GenerateSupported bool
 
@@ -311,6 +333,12 @@ var MainNetParams = Params{
 	RetargetAdjustmentFactor: 4,                                       // 25% less, 400% more
 	ReduceMinDifficulty:      false,
 	MinDiffReductionTime:     0,
+	LWMAHeight:               1243845,
+	LWMAFixHeight:            1244300,
+	LWMAWindow:               45,
+	ASERTHeight:              1246000,
+	ASERTHalfLife:            3600,
+	ASERTAnchorBits:          0x1d18ffe7,
 	GenerateSupported:        false,
 
 	// Checkpoints ordered from oldest to newest.
@@ -453,6 +481,12 @@ var RegressionNetParams = Params{
 	RetargetAdjustmentFactor: 4,                                       // 25% less, 400% more
 	ReduceMinDifficulty:      true,
 	MinDiffReductionTime:     time.Minute * 20, // TargetTimePerBlock * 2
+	LWMAHeight:               500,
+	LWMAFixHeight:            600,
+	LWMAWindow:               45,
+	ASERTHeight:              700,
+	ASERTHalfLife:            3600,
+	ASERTAnchorBits:          0x1d18ffe7,
 	GenerateSupported:        true,
 
 	// Checkpoints ordered from oldest to newest.
@@ -576,6 +610,12 @@ var TestNet4Params = Params{
 	RetargetAdjustmentFactor: 4,                                       // 25% less, 400% more
 	ReduceMinDifficulty:      true,
 	MinDiffReductionTime:     time.Minute * 5, // TargetTimePerBlock * 2
+	LWMAHeight:               100,
+	LWMAFixHeight:            200,
+	LWMAWindow:               45,
+	ASERTHeight:              300,
+	ASERTHalfLife:            3600,
+	ASERTAnchorBits:          0x1d18ffe7,
 	GenerateSupported:        false,
 
 	// Checkpoints ordered from oldest to newest.
