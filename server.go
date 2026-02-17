@@ -46,7 +46,7 @@ const (
 	// the server.
 	defaultServices = wire.SFNodeNetwork | wire.SFNodeNetworkLimited |
 		wire.SFNodeBloom | wire.SFNodeWitness | wire.SFNodeCF |
-		wire.SFNodeMWEB
+		wire.SFNodeMWEBLightClient | wire.SFNodeMWEB
 
 	// defaultRequiredServices describes the default services that are
 	// required to be supported by outbound peers.
