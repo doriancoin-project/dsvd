@@ -320,6 +320,14 @@ func (sm *SyncManager) startSync() {
 		bestPeer = higherPeers[rand.Intn(len(higherPeers))]
 
 	case len(equalPeers) > 0:
+		// If the chain is already current and all peers are at the
+		// same height, don't initiate a sync. New blocks will arrive
+		// via inv announcements. This avoids a stall timeout cycle
+		// when we send getblocks and the peer has nothing to respond
+		// with.
+		if sm.chain.IsCurrent() {
+			return
+		}
 		bestPeer = equalPeers[rand.Intn(len(equalPeers))]
 	}
 
